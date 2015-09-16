@@ -34,11 +34,12 @@ function onRequest(request, response)
 
 //When a new socket joins
 var onJoined = function(socket){
+	//Setting EventListener for join
 	socket.on("join",function(data){
 
 		var joinMsg = {
 			name: 'server',
-			msg: 'There are ' + Object.keys(users).length + 'users online'
+			msg: 'There are ' + Object.keys(users).length + ' users online'
 		};
 
 		//Send the join message to the socket that just joined
@@ -56,7 +57,10 @@ var onJoined = function(socket){
 };
 
 var onMsg = function(socket){
-
+	//Setting EventListener for msgToServer
+	socket.on('msgToServer',function(data){
+		io.sockets.in('room1').emit('msg',{name:socket.name,msg:data.msg});
+	});
 };
 
 var onDisconnect = function(socket){
@@ -65,6 +69,7 @@ var onDisconnect = function(socket){
 
 //When a socket connects, assign it's delegate functions
 io.sockets.on("connection",function(socket){
+	//Call these functions to hook up listener events
 	onJoined(socket);
 	onMsg(socket);
 	onDisconnect(socket);
