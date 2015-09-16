@@ -1,3 +1,42 @@
+<script src = "/socket.io/socket.io.js"></script>
+
+<script> 
+
+	function connectSocket(e){
+		var message = document.querySelector("#message");
+
+		var chat = document.querySelector("#chat");
+
+		var socket = io.connect();
+
+		//listener for connect event
+		socket.on('connect',function(){
+			console.log('connecting');
+
+			var user = document.querySelector("#username").value;
+
+			if(!user){
+				user = 'unknown';
+			}
+
+			socket.emit('join',{name:user});
+		});
+
+		//listener for msg event
+		//TODO: Added functionality
+		socket.on('msg',function(data){
+			console.log(data);
+		});
+	}
+
+	function init(){
+		var connect = document.querySelector("#connect");
+		connect.addEventListener('click',connectSocket);
+	}
+
+	window.onload = init;
+</script>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
