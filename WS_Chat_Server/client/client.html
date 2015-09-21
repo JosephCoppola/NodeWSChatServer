@@ -1,29 +1,36 @@
 <script src = "/socket.io/socket.io.js"></script>
 
 <script> 
-	var socket;
+	var socket = null;
 	var messageInput;
 	var chat;
 	var user;
 
 	function connectSocket(e){
+
 		socket = io.connect();
 
 		messageInput = document.querySelector("#message");
 
 		chat = document.querySelector("#chat");
 
+		user = document.querySelector("#username").value;
+
 		//listener for connect event
 		socket.on('connect',function(){
 			console.log('connecting');
-
-			user = document.querySelector("#username").value;
 
 			if(!user){
 				user = 'unknown';
 			}
 
 			socket.emit('join',{name:user});
+		});
+
+		socket.on('changeName',function(data){
+			var oldUser = user;
+			user = data.name;
+			socket.emit('msgToServer',{name:user,msg:oldUser + " is now known as " + user});
 		});
 
 		//listener for msg event
@@ -44,12 +51,14 @@
 			chat.value += "\n\n" + data;
 			chat.scrollTop = chat.scrollHeight;
 		});
+
+		document.querySelector("#login").innerHTML += "<input id=\"change\" type=\"button\" value=\"change\" onclick = \"validateName()\"/>";
 	}
 
 	function sendMessage(e){
 		var message = messageInput.value;
 
-		socket.emit('msgToServer',{name:user,msg:message})
+		socket.emit('msgToServer',{name:user,msg:message});
 	}
 
 	function sendPrivate(e){
@@ -64,6 +73,17 @@
 		socket.emit('privateMsg',{name:user,sendTo:recipient.value,msg:message})
 
 		document.querySelector("#privateMsgDropDown").innerHTML = "";
+	}
+
+	function validateName()
+	{
+		user = document.querySelector("#username").value;
+
+		if(!user){
+			user = 'unknown';
+		}
+
+		socket.emit('validate',{newName:user});
 	}
 
 	function buildUserList(data)
@@ -115,15 +135,19 @@
 	</style>
 </head>
 <body>
-	<label for="user">Username:</label>
-	<input id="username" name="user" type="text"/>
-	<input id="connect" type='button' value='connect'/>
+	<div id ="login">
+		<label for="user">Username:</label>
+		<input id="username" name="user" type="text"/>
+		<input id="connect" type='button' value='connect'/>
+	</div>
+	</br>
+	<textarea id="chat" rows="20" cols="40" readonly> </textarea>
 	</br>
 	<label for="message">Message:</label>
 	<input id="message" name="message" type="text"/>
 	<input id="send" type="button" value="send" />
 	<input id="private" type="button" value="private"/>
+	<input id="poke" type="button" value"poke"/>
 	<div id="privateMsgDropDown"></div>
-	<textarea id="chat" rows="20" cols="40" readonly> </textarea>
 </body>
 </html>

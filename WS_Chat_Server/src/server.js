@@ -32,15 +32,48 @@ function onRequest(request, response)
 
 //Websockets
 
+function validateName(username)
+{
+	for(var key in users)
+	{
+		if(users[key].username == username)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+function getRandomInt (min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 //When a new socket joins
 var onJoined = function(socket){
 	//Setting EventListener for join
 	socket.on("join",function(data){
 
-		var key = data.name;
+		socket.username = data.name;
+
+		if(!validateName(socket.username))
+		{
+			socket.emit('msg',{name:'Server',msg:'Name already taken. Defaulting name to "Unknown"! Click change to change the username'});
+			var num = getRandomInt(0,9000);
+			socket.username = "Unknown" + num;
+			socket.emit('changeName',{name:socket.username});
+		}
+
+		var key = socket.id;
+
+		onMsg(socket);
+		onUserListRequest(socket);
+		onDisconnect(socket);
+		onPrivateMsg(socket);
+		validate(socket);
 
 		users[key] = socket;
-
+	
 		var joinMsg = {
 			name: 'server',
 			msg: 'There are ' + Object.keys(users).length + ' users online'
@@ -49,14 +82,33 @@ var onJoined = function(socket){
 		//Send the join message to the socket that just joined
 		socket.emit('msg',joinMsg);
 		socket.name = data.name;
-
+	
 		socket.join('room1');
-
+	
 		//Send a message to all people in room 1
-		socket.broadcast.to('room1').emit('msg',{name:'server',msg:data.name + " has joined the room.",sendTo:"global"});
-
+		socket.broadcast.to('room1').emit('msg',{name:'Server',msg:data.name + " has joined the room.",sendTo:"global"});
+	
 		//Let the the socket that just joined know they joined
-		socket.emit('msg',{name:'server',msg:'You joined the room'});
+		socket.emit('msg',{name:'Server',msg:'You joined the room'})
+	});
+};
+
+var validate = function(socket){
+	socket.on('validate',function(data){
+
+		if(validateName(data.newName))
+		{
+			var socketUsername = socket.id;
+			users[socketUsername].username = data.newName;
+			socket.emit('changeName',{name:socket.username});
+		}
+		else
+		{
+			socket.emit('msg',{name:'Server',msg:'Name already taken. Defaulting name to "Unknown"! Click change to change the username'});
+			var num = getRandomInt(0,9000);
+			socket.username = "Unknown" + num;
+			socket.emit('changeName',{name:socket.username});
+		}
 	});
 };
 
@@ -72,9 +124,9 @@ var onUserListRequest = function(socket){
 
 		var usersList = [];
 
-		for(i = 0; i < Object.keys(users).length; i++)
+		for(var key in users)
 		{
-			usersList.push(Object.keys(users)[i]);
+			usersList.push(users[key].username);
 		}
 
 		socket.emit('userList',{userList:usersList});
@@ -91,8 +143,11 @@ var onPrivateMsg = function(socket){
 }
 
 var onDisconnect = function(socket){
-	socket.on('onDisconnect',function(data){
-		console.log("Someone left");
+	socket.on('disconnect',function(data){
+
+		io.sockets.in('room1').emit('msg',{name:'Server',msg:socket.username + " has left"});
+
+		delete users[socket.id];
 	});
 };
 
@@ -100,10 +155,6 @@ var onDisconnect = function(socket){
 io.sockets.on("connection",function(socket){
 	//Call these functions to hook up listener events
 	onJoined(socket);
-	onMsg(socket);
-	onUserListRequest(socket);
-	onDisconnect(socket);
-	onPrivateMsg(socket);
 });
 
 console.log("websocket server started");
