@@ -86,6 +86,11 @@
 		socket.emit('validate',{newName:user});
 	}
 
+	function sendPoke()
+	{
+		socket.emit('poke',{name:user});
+	}
+
 	function buildUserList(data)
 	{
 		var html = "<select id = \"pvtMsgChoice\" onchange = \"selectRecipientForMessage()\"><option>--Select recipient--</option>";
@@ -110,6 +115,9 @@
 
 		var privateButton = document.querySelector("#private");
 		privateButton.addEventListener('click',sendPrivate);
+
+		var pokeButton = document.querySelector("#poke");
+		pokeButton.addEventListener('click',sendPoke);
 	}
 
 	window.onload = init;
@@ -147,7 +155,7 @@
 	<input id="message" name="message" type="text"/>
 	<input id="send" type="button" value="send" />
 	<input id="private" type="button" value="private"/>
-	<input id="poke" type="button" value"poke"/>
+	<input id="poke" type="button" value="poke"/>
 	<div id="privateMsgDropDown"></div>
 </body>
 </html>

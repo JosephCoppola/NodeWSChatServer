@@ -49,6 +49,20 @@ function getRandomInt (min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+function findSocketIDFromUsername(username)
+{
+	for (var s in users)
+	{
+		console.log("Socket in users " + s + " username " + username);
+		if(users[s].username == username)
+		{
+			return s;
+		}
+	}
+
+	return null;
+}
+
 //When a new socket joins
 var onJoined = function(socket){
 	//Setting EventListener for join
@@ -86,11 +100,22 @@ var onJoined = function(socket){
 		socket.join('room1');
 	
 		//Send a message to all people in room 1
-		socket.broadcast.to('room1').emit('msg',{name:'Server',msg:data.name + " has joined the room.",sendTo:"global"});
+		socket.broadcast.to('room1').emit('msg',{name:'Server',msg:data.name + " has joined the room."});
 	
 		//Let the the socket that just joined know they joined
 		socket.emit('msg',{name:'Server',msg:'You joined the room'})
 	});
+};
+
+var poke = function(socket){
+	var currentdate = new Date(); 
+	var datetime = "Last Sync: " + currentdate.getDate() + "/"
+                + (currentdate.getMonth()+1)  + "/" 
+                + currentdate.getFullYear() + " @ "  
+                + currentdate.getHours() + ":"  
+                + currentdate.getMinutes() + ":" 
+                + currentdate.getSeconds();
+	socket.broadcast.to('room1').emit('msg',{name:'Server',msg:data.name + " has poked the room " + datetime});
 };
 
 var validate = function(socket){
@@ -137,8 +162,10 @@ var onPrivateMsg = function(socket){
 	socket.on('privateMsg',function(data){
 		var msg = "[Private Message] " + data.name + ": " + data.msg;
 		var senderMsg = "[Private Message] To " + data.sendTo + ": " + data.msg;
-		users[data.sendTo].emit('pvtMsg',msg);
-		users[data.name].emit('pvtMsg',senderMsg);
+		var sendToKey = findSocketIDFromUsername(data.sendTo);
+		console.log(users);
+		users[sendToKey].emit('pvtMsg',msg);
+		users[socket.id].emit('pvtMsg',senderMsg);
 	});
 }
 
