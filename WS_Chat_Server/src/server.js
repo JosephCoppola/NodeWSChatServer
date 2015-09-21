@@ -53,7 +53,7 @@ function findSocketIDFromUsername(username)
 {
 	for (var s in users)
 	{
-		console.log("Socket in users " + s + " username " + username);
+		//console.log("Socket in users " + s + " username " + username);
 		if(users[s].username == username)
 		{
 			return s;
@@ -85,6 +85,7 @@ var onJoined = function(socket){
 		onDisconnect(socket);
 		onPrivateMsg(socket);
 		validate(socket);
+		poke(socket);
 
 		users[key] = socket;
 	
@@ -108,14 +109,16 @@ var onJoined = function(socket){
 };
 
 var poke = function(socket){
-	var currentdate = new Date(); 
-	var datetime = "Last Sync: " + currentdate.getDate() + "/"
+	socket.on('poke',function(data){
+		var currentdate = new Date(); 
+		var datetime = "At: " + currentdate.getDate() + "/"
                 + (currentdate.getMonth()+1)  + "/" 
                 + currentdate.getFullYear() + " @ "  
                 + currentdate.getHours() + ":"  
                 + currentdate.getMinutes() + ":" 
                 + currentdate.getSeconds();
-	socket.broadcast.to('room1').emit('msg',{name:'Server',msg:data.name + " has poked the room " + datetime});
+		io.sockets.in('room1').emit('msg',{name:'Server',msg:socket.username + " has poked the room " + datetime});
+	});
 };
 
 var validate = function(socket){
@@ -163,7 +166,7 @@ var onPrivateMsg = function(socket){
 		var msg = "[Private Message] " + data.name + ": " + data.msg;
 		var senderMsg = "[Private Message] To " + data.sendTo + ": " + data.msg;
 		var sendToKey = findSocketIDFromUsername(data.sendTo);
-		console.log(users);
+		//console.log(users);
 		users[sendToKey].emit('pvtMsg',msg);
 		users[socket.id].emit('pvtMsg',senderMsg);
 	});
