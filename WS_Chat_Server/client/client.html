@@ -1,19 +1,23 @@
 <script src = "/socket.io/socket.io.js"></script>
 
 <script> 
+	var socket;
+	var messageInput;
+	var chat;
+	var user;
 
 	function connectSocket(e){
-		var message = document.querySelector("#message");
+		socket = io.connect();
 
-		var chat = document.querySelector("#chat");
+		messageInput = document.querySelector("#message");
 
-		var socket = io.connect();
+		chat = document.querySelector("#chat");
 
 		//listener for connect event
 		socket.on('connect',function(){
 			console.log('connecting');
 
-			var user = document.querySelector("#username").value;
+			user = document.querySelector("#username").value;
 
 			if(!user){
 				user = 'unknown';
@@ -24,14 +28,68 @@
 
 		//listener for msg event
 		//TODO: Added functionality
-		socket.on('msg',function(data){
-			console.log(data);
+		socket.on('msg',function(data)
+		{
+			chat.value += "\n\n" + data.name + ": " + data.msg;
+			chat.scrollTop = chat.scrollHeight;
 		});
+
+		socket.on('userList',function(data){
+			var html = buildUserList(data);
+			var div = document.querySelector("#privateMsgDropDown");
+			div.innerHTML = html;
+		});
+
+		socket.on('pvtMsg',function(data){
+			chat.value += "\n\n" + data;
+			chat.scrollTop = chat.scrollHeight;
+		});
+	}
+
+	function sendMessage(e){
+		var message = messageInput.value;
+
+		socket.emit('msgToServer',{name:user,msg:message})
+	}
+
+	function sendPrivate(e){
+		socket.emit('getUserList',{name:user});
+	}
+
+	function selectRecipientForMessage(e)
+	{
+		var message = messageInput.value;
+		var recipient = document.querySelector("#pvtMsgChoice");
+
+		socket.emit('privateMsg',{name:user,sendTo:recipient.value,msg:message})
+
+		document.querySelector("#privateMsgDropDown").innerHTML = "";
+	}
+
+	function buildUserList(data)
+	{
+		var html = "<select id = \"pvtMsgChoice\" onchange = \"selectRecipientForMessage()\"><option>--Select recipient--</option>";
+
+		for(i = 0;i<data.userList.length;i++)
+		{
+			var username = data.userList[i];
+			html += "<option value =\"" + username + "\">" + username + "</option>";
+		}
+
+		html += "</select>";
+
+		return html;
 	}
 
 	function init(){
 		var connect = document.querySelector("#connect");
 		connect.addEventListener('click',connectSocket);
+
+		var send = document.querySelector("#send");
+		send.addEventListener('click',sendMessage);
+
+		var privateButton = document.querySelector("#private");
+		privateButton.addEventListener('click',sendPrivate);
 	}
 
 	window.onload = init;
@@ -64,7 +122,8 @@
 	<label for="message">Message:</label>
 	<input id="message" name="message" type="text"/>
 	<input id="send" type="button" value="send" />
-	
+	<input id="private" type="button" value="private"/>
+	<div id="privateMsgDropDown"></div>
 	<textarea id="chat" rows="20" cols="40" readonly> </textarea>
 </body>
 </html>

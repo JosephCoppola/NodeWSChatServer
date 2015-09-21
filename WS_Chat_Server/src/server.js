@@ -37,6 +37,10 @@ var onJoined = function(socket){
 	//Setting EventListener for join
 	socket.on("join",function(data){
 
+		var key = data.name;
+
+		users[key] = socket;
+
 		var joinMsg = {
 			name: 'server',
 			msg: 'There are ' + Object.keys(users).length + ' users online'
@@ -49,7 +53,7 @@ var onJoined = function(socket){
 		socket.join('room1');
 
 		//Send a message to all people in room 1
-		socket.broadcast.to('room1').emit('msg',{name:'server',msg:data.name + " has joined the room."});
+		socket.broadcast.to('room1').emit('msg',{name:'server',msg:data.name + " has joined the room.",sendTo:"global"});
 
 		//Let the the socket that just joined know they joined
 		socket.emit('msg',{name:'server',msg:'You joined the room'});
@@ -59,12 +63,37 @@ var onJoined = function(socket){
 var onMsg = function(socket){
 	//Setting EventListener for msgToServer
 	socket.on('msgToServer',function(data){
-		io.sockets.in('room1').emit('msg',{name:socket.name,msg:data.msg});
+		io.sockets.in('room1').emit('msg',{name:data.name,msg:data.msg});
 	});
 };
 
-var onDisconnect = function(socket){
+var onUserListRequest = function(socket){
+	socket.on('getUserList',function(data){
 
+		var usersList = [];
+
+		for(i = 0; i < Object.keys(users).length; i++)
+		{
+			usersList.push(Object.keys(users)[i]);
+		}
+
+		socket.emit('userList',{userList:usersList});
+	});
+}
+
+var onPrivateMsg = function(socket){
+	socket.on('privateMsg',function(data){
+		var msg = "[Private Message] " + data.name + ": " + data.msg;
+		var senderMsg = "[Private Message] To " + data.sendTo + ": " + data.msg;
+		users[data.sendTo].emit('pvtMsg',msg);
+		users[data.name].emit('pvtMsg',senderMsg);
+	});
+}
+
+var onDisconnect = function(socket){
+	socket.on('onDisconnect',function(data){
+		console.log("Someone left");
+	});
 };
 
 //When a socket connects, assign it's delegate functions
@@ -72,7 +101,9 @@ io.sockets.on("connection",function(socket){
 	//Call these functions to hook up listener events
 	onJoined(socket);
 	onMsg(socket);
+	onUserListRequest(socket);
 	onDisconnect(socket);
+	onPrivateMsg(socket);
 });
 
 console.log("websocket server started");
