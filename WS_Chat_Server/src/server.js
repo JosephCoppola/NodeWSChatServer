@@ -32,6 +32,7 @@ function onRequest(request, response)
 
 //Websockets
 
+//Helper Function
 function validateName(username)
 {
 	for(var key in users)
@@ -45,10 +46,12 @@ function validateName(username)
 	return true;
 }
 
+//Helper function
 function getRandomInt (min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+//Get the socket id from the username
 function findSocketIDFromUsername(username)
 {
 	for (var s in users)
@@ -77,16 +80,18 @@ var onJoined = function(socket){
 			socket.username = "Unknown" + num;
 			socket.emit('changeName',{name:socket.username});
 		}
-
+		
 		var key = socket.id;
-
+	
+		//Set up additional listeners
 		onMsg(socket);
 		onUserListRequest(socket);
 		onDisconnect(socket);
 		onPrivateMsg(socket);
 		validate(socket);
 		poke(socket);
-
+	
+		//Add the socket at socket id in users
 		users[key] = socket;
 	
 		var joinMsg = {
@@ -108,6 +113,7 @@ var onJoined = function(socket){
 	});
 };
 
+//Event listener for poke function
 var poke = function(socket){
 	socket.on('poke',function(data){
 		var currentdate = new Date(); 
@@ -121,6 +127,7 @@ var poke = function(socket){
 	});
 };
 
+//Event listener for validate function
 var validate = function(socket){
 	socket.on('validate',function(data){
 
@@ -140,6 +147,7 @@ var validate = function(socket){
 	});
 };
 
+//Event listener for message function
 var onMsg = function(socket){
 	//Setting EventListener for msgToServer
 	socket.on('msgToServer',function(data){
@@ -147,6 +155,7 @@ var onMsg = function(socket){
 	});
 };
 
+//Event listener for user list request
 var onUserListRequest = function(socket){
 	socket.on('getUserList',function(data){
 
@@ -161,6 +170,7 @@ var onUserListRequest = function(socket){
 	});
 }
 
+//Event listener for private message
 var onPrivateMsg = function(socket){
 	socket.on('privateMsg',function(data){
 		var msg = "[Private Message] " + data.name + ": " + data.msg;
@@ -172,6 +182,7 @@ var onPrivateMsg = function(socket){
 	});
 }
 
+//Event listener for onDisconnect
 var onDisconnect = function(socket){
 	socket.on('disconnect',function(data){
 

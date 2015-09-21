@@ -5,7 +5,8 @@
 	var messageInput;
 	var chat;
 	var user;
-
+	
+	//Called when connect is pressed
 	function connectSocket(e){
 
 		socket = io.connect();
@@ -34,19 +35,20 @@
 		});
 
 		//listener for msg event
-		//TODO: Added functionality
 		socket.on('msg',function(data)
 		{
 			chat.value += "\n\n" + data.name + ": " + data.msg;
 			chat.scrollTop = chat.scrollHeight;
 		});
-
+		
+		//listner for user list message
 		socket.on('userList',function(data){
 			var html = buildUserList(data);
 			var div = document.querySelector("#privateMsgDropDown");
 			div.innerHTML = html;
 		});
-
+	
+		//listner for private message
 		socket.on('pvtMsg',function(data){
 			chat.value += "\n\n" + data;
 			chat.scrollTop = chat.scrollHeight;
